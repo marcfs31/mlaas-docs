@@ -13,7 +13,7 @@
     "description": "Register a dataset and a model spec, train, and call predict. Every prediction is logged; post real outcomes to /feedback. A loop checks each model on a schedule and, when enough new labels arrive, the live score drops, inputs drift, or a timer elapses, trains a challenger and promotes it only if it beats the champion on the same holdout.\n\nEvery call needs an `X-API-Key` header except where marked otherwise. This document is generated from the running build's own route table, so its version is the version answering.",
     "summary": "A local model service that retrains itself.",
     "title": "mlaas",
-    "version": "v1.8.0"
+    "version": "v1.8.1"
   },
   "openapi": "3.1.0",
   "paths": {
