@@ -1,0 +1,942 @@
+{
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "description": "Generated on first start and kept in data/api_key.",
+        "in": "header",
+        "name": "X-API-Key",
+        "type": "apiKey"
+      }
+    }
+  },
+  "info": {
+    "description": "Register a dataset and a model spec, train, and call predict. Every prediction is logged; post real outcomes to /feedback. A loop checks each model on a schedule and, when enough new labels arrive, the live score drops, inputs drift, or a timer elapses, trains a challenger and promotes it only if it beats the champion on the same holdout.\n\nEvery call needs an `X-API-Key` header except where marked otherwise. This document is generated from the running build's own route table, so its version is the version answering.",
+    "summary": "A local model service that retrains itself.",
+    "title": "mlaas",
+    "version": "v1.7.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/catalog": {
+      "get": {
+        "operationId": "getCatalog",
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          },
+          "401": {
+            "description": "missing or wrong X-API-Key"
+          }
+        },
+        "summary": "public datasets that can be fetched by name, with their licences",
+        "tags": [
+          "Datasets"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s -H \"X-API-Key: {key}\" {base}/catalog"
+          }
+        ]
+      }
+    },
+    "/catalog/{name}": {
+      "post": {
+        "operationId": "postCatalogName",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          },
+          "401": {
+            "description": "missing or wrong X-API-Key"
+          }
+        },
+        "summary": "fetch a catalog dataset and get a suggested model spec for it",
+        "tags": [
+          "Datasets"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s -X POST -H \"X-API-Key: {key}\" {base}/catalog/penguins"
+          }
+        ]
+      }
+    },
+    "/datasets": {
+      "get": {
+        "operationId": "getDatasets",
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          },
+          "401": {
+            "description": "missing or wrong X-API-Key"
+          }
+        },
+        "summary": "registered datasets, with the description and likely target the local model wrote for an upload",
+        "tags": [
+          "Datasets"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s -H \"X-API-Key: {key}\" {base}/datasets"
+          }
+        ]
+      },
+      "post": {
+        "operationId": "postDatasets",
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          },
+          "401": {
+            "description": "missing or wrong X-API-Key"
+          }
+        },
+        "summary": "upload a CSV with a header (multipart: name, file). Bodies over 512 MiB are refused",
+        "tags": [
+          "Datasets"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s -H \"X-API-Key: {key}\" -F name=mydata -F file=@mydata.csv {base}/datasets"
+          }
+        ]
+      }
+    },
+    "/datasets/{name}/refresh": {
+      "post": {
+        "operationId": "postDatasetsNameRefresh",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          },
+          "401": {
+            "description": "missing or wrong X-API-Key"
+          }
+        },
+        "summary": "re-fetch a dataset that came from a live source",
+        "tags": [
+          "Datasets"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s -X POST -H \"X-API-Key: {key}\" {base}/datasets/sales/refresh"
+          }
+        ]
+      }
+    },
+    "/feedback": {
+      "post": {
+        "operationId": "postFeedback",
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          },
+          "401": {
+            "description": "missing or wrong X-API-Key"
+          }
+        },
+        "summary": "the real outcome for a logged prediction; this is what retraining learns from",
+        "tags": [
+          "Predictions"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s -X POST -H \"X-API-Key: {key}\" -H 'Content-Type: application/json' -d '{\"labels\":[{\"prediction_id\":\"\u003cid\u003e\",\"label\":\"Gentoo\"}]}' {base}/feedback"
+          }
+        ]
+      }
+    },
+    "/glossary": {
+      "get": {
+        "operationId": "getGlossary",
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          },
+          "401": {
+            "description": "missing or wrong X-API-Key"
+          }
+        },
+        "summary": "every term this API and console use, defined in plain words",
+        "tags": [
+          "Service"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s -H \"X-API-Key: {key}\" {base}/glossary"
+          }
+        ]
+      }
+    },
+    "/healthz": {
+      "get": {
+        "operationId": "getHealthz",
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          }
+        },
+        "security": [],
+        "summary": "whether the database answers and the retrain loop is alive, and which release is running. The only API route that needs no key, so a supervisor can probe it",
+        "tags": [
+          "Service"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s {base}/healthz"
+          }
+        ]
+      }
+    },
+    "/jobs": {
+      "get": {
+        "operationId": "getJobs",
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          },
+          "401": {
+            "description": "missing or wrong X-API-Key"
+          }
+        },
+        "summary": "training jobs, newest first; filter with ?model=",
+        "tags": [
+          "Jobs"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s -H \"X-API-Key: {key}\" \"{base}/jobs?model=penguins\""
+          }
+        ]
+      }
+    },
+    "/jobs/{id}": {
+      "get": {
+        "operationId": "getJobsId",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          },
+          "401": {
+            "description": "missing or wrong X-API-Key"
+          }
+        },
+        "summary": "one job: its status and the log its plugin wrote",
+        "tags": [
+          "Jobs"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s -H \"X-API-Key: {key}\" {base}/jobs/\u003cid\u003e"
+          }
+        ]
+      }
+    },
+    "/jobs/{id}/cancel": {
+      "post": {
+        "operationId": "postJobsIdCancel",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          },
+          "401": {
+            "description": "missing or wrong X-API-Key"
+          }
+        },
+        "summary": "stop a queued or running job",
+        "tags": [
+          "Jobs"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s -X POST -H \"X-API-Key: {key}\" {base}/jobs/\u003cid\u003e/cancel"
+          }
+        ]
+      }
+    },
+    "/llm": {
+      "get": {
+        "operationId": "getLlm",
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          },
+          "401": {
+            "description": "missing or wrong X-API-Key"
+          }
+        },
+        "summary": "whether the local language model is reachable, and which one is configured",
+        "tags": [
+          "Service"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s -H \"X-API-Key: {key}\" {base}/llm"
+          }
+        ]
+      }
+    },
+    "/metrics": {
+      "get": {
+        "operationId": "getMetrics",
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          },
+          "401": {
+            "description": "missing or wrong X-API-Key"
+          }
+        },
+        "summary": "Prometheus text: jobs, predictions and model scores",
+        "tags": [
+          "Service"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s -H \"X-API-Key: {key}\" {base}/metrics"
+          }
+        ]
+      }
+    },
+    "/models": {
+      "get": {
+        "operationId": "getModels",
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          },
+          "401": {
+            "description": "missing or wrong X-API-Key"
+          }
+        },
+        "summary": "every model with its champion version and that version's holdout metrics",
+        "tags": [
+          "Models"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s -H \"X-API-Key: {key}\" {base}/models"
+          }
+        ]
+      },
+      "post": {
+        "operationId": "postModels",
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          },
+          "401": {
+            "description": "missing or wrong X-API-Key"
+          }
+        },
+        "summary": "create a model spec: which dataset, plugin, task and target column",
+        "tags": [
+          "Models"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s -X POST -H \"X-API-Key: {key}\" -H 'Content-Type: application/json' -d '{\"name\":\"penguins\",\"dataset\":\"penguins\",\"plugin\":\"linear\",\"task\":\"classification\",\"target\":\"species\"}' {base}/models"
+          }
+        ]
+      }
+    },
+    "/models/{name}": {
+      "get": {
+        "operationId": "getModelsName",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          },
+          "401": {
+            "description": "missing or wrong X-API-Key"
+          }
+        },
+        "summary": "one model: its spec, champion, and every version with metrics",
+        "tags": [
+          "Models"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s -H \"X-API-Key: {key}\" {base}/models/penguins"
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "patchModelsName",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          },
+          "401": {
+            "description": "missing or wrong X-API-Key"
+          }
+        },
+        "summary": "change metric, plugin, params, features, retrain, promotion or tags; retrain to apply",
+        "tags": [
+          "Models"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s -X PATCH -H \"X-API-Key: {key}\" -H 'Content-Type: application/json' -d '{\"metric\":\"f1_macro\"}' {base}/models/penguins"
+          }
+        ]
+      }
+    },
+    "/models/{name}/actual": {
+      "get": {
+        "operationId": "getModelsNameActual",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          },
+          "401": {
+            "description": "missing or wrong X-API-Key"
+          }
+        },
+        "summary": "the observed value for a forecast date, fetching a live source if it is stale",
+        "tags": [
+          "Models"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s -H \"X-API-Key: {key}\" \"{base}/models/sales/actual?at=2026-01-31\""
+          }
+        ]
+      }
+    },
+    "/models/{name}/explain": {
+      "post": {
+        "operationId": "postModelsNameExplain",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          },
+          "401": {
+            "description": "missing or wrong X-API-Key"
+          }
+        },
+        "summary": "why a prediction came out as it did, in plain English, from the facts returned with it",
+        "tags": [
+          "Predictions"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s -X POST -H \"X-API-Key: {key}\" -H 'Content-Type: application/json' -d '{\"prediction_id\":\"\u003cid\u003e\"}' {base}/models/penguins/explain"
+          }
+        ]
+      }
+    },
+    "/models/{name}/health": {
+      "get": {
+        "operationId": "getModelsNameHealth",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          },
+          "401": {
+            "description": "missing or wrong X-API-Key"
+          }
+        },
+        "summary": "live-window score, input drift, and what last triggered a retrain",
+        "tags": [
+          "Models"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s -H \"X-API-Key: {key}\" {base}/models/penguins/health"
+          }
+        ]
+      }
+    },
+    "/models/{name}/predict": {
+      "post": {
+        "operationId": "postModelsNamePredict",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          },
+          "401": {
+            "description": "missing or wrong X-API-Key"
+          }
+        },
+        "summary": "rows in, predictions and their ids out; every prediction is logged",
+        "tags": [
+          "Predictions"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s -X POST -H \"X-API-Key: {key}\" -H 'Content-Type: application/json' -d '{\"rows\":[{\"island\":\"Biscoe\",\"bill_length_mm\":45.1,\"bill_depth_mm\":14.5,\"flipper_length_mm\":215,\"body_mass_g\":5000,\"sex\":\"female\",\"year\":2008}]}' {base}/models/penguins/predict"
+          }
+        ]
+      }
+    },
+    "/models/{name}/promote/{number}": {
+      "post": {
+        "operationId": "postModelsNamePromoteNumber",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "number",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          },
+          "401": {
+            "description": "missing or wrong X-API-Key"
+          }
+        },
+        "summary": "make a version the champion by hand",
+        "tags": [
+          "Training"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s -X POST -H \"X-API-Key: {key}\" {base}/models/penguins/promote/3"
+          }
+        ]
+      }
+    },
+    "/models/{name}/rollback": {
+      "post": {
+        "operationId": "postModelsNameRollback",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          },
+          "401": {
+            "description": "missing or wrong X-API-Key"
+          }
+        },
+        "summary": "go back to the previous champion",
+        "tags": [
+          "Training"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s -X POST -H \"X-API-Key: {key}\" {base}/models/penguins/rollback"
+          }
+        ]
+      }
+    },
+    "/models/{name}/sample": {
+      "get": {
+        "operationId": "getModelsNameSample",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          },
+          "401": {
+            "description": "missing or wrong X-API-Key"
+          }
+        },
+        "summary": "real rows from the model's dataset, to try a prediction with",
+        "tags": [
+          "Models"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s -H \"X-API-Key: {key}\" {base}/models/penguins/sample"
+          }
+        ]
+      }
+    },
+    "/models/{name}/summary": {
+      "get": {
+        "operationId": "getModelsNameSummary",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          },
+          "401": {
+            "description": "missing or wrong X-API-Key"
+          }
+        },
+        "summary": "the model's health in plain English, written by the local language model",
+        "tags": [
+          "Models"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s -H \"X-API-Key: {key}\" {base}/models/penguins/summary"
+          }
+        ]
+      }
+    },
+    "/models/{name}/train": {
+      "post": {
+        "operationId": "postModelsNameTrain",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          },
+          "401": {
+            "description": "missing or wrong X-API-Key"
+          }
+        },
+        "summary": "enqueue a training job; the result is promoted only if it beats the champion",
+        "tags": [
+          "Training"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s -X POST -H \"X-API-Key: {key}\" {base}/models/penguins/train"
+          }
+        ]
+      }
+    },
+    "/models/{name}/tune": {
+      "post": {
+        "operationId": "postModelsNameTune",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          },
+          "401": {
+            "description": "missing or wrong X-API-Key"
+          }
+        },
+        "summary": "search the plugin's parameters and train a candidate on the best found",
+        "tags": [
+          "Training"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s -X POST -H \"X-API-Key: {key}\" {base}/models/penguins/tune"
+          }
+        ]
+      }
+    },
+    "/models/{name}/versions/{number}/tuning/narration": {
+      "get": {
+        "operationId": "getModelsNameVersionsNumberTuningNarration",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "number",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          },
+          "401": {
+            "description": "missing or wrong X-API-Key"
+          }
+        },
+        "summary": "what a tuning run tried and why it settled where it did, in plain English",
+        "tags": [
+          "Training"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s -H \"X-API-Key: {key}\" {base}/models/penguins/versions/3/tuning/narration"
+          }
+        ]
+      }
+    },
+    "/openapi.json": {
+      "get": {
+        "operationId": "getOpenapiJson",
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          }
+        },
+        "security": [],
+        "summary": "this reference as an OpenAPI 3.1 document, generated from the running build's own route table",
+        "tags": [
+          "Service"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s {base}/openapi.json"
+          }
+        ]
+      }
+    },
+    "/session": {
+      "get": {
+        "operationId": "getSession",
+        "responses": {
+          "200": {
+            "description": "the call succeeded"
+          },
+          "401": {
+            "description": "missing or wrong X-API-Key"
+          }
+        },
+        "summary": "how this request was authenticated: by key, by Tailscale identity, or open",
+        "tags": [
+          "Service"
+        ],
+        "x-codeSamples": [
+          {
+            "label": "curl",
+            "lang": "Shell",
+            "source": "curl -s -H \"X-API-Key: {key}\" {base}/session"
+          }
+        ]
+      }
+    }
+  },
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Models"
+    },
+    {
+      "name": "Training"
+    },
+    {
+      "name": "Predictions"
+    },
+    {
+      "name": "Datasets"
+    },
+    {
+      "name": "Jobs"
+    },
+    {
+      "name": "Service"
+    }
+  ]
+}

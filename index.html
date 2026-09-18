@@ -1,1 +1,82 @@
-<!doctype html><meta charset="utf-8"><title>mlaas · API reference</title><body style="background:#12161c;color:#aab3c1;font:15px -apple-system,sans-serif;margin:0;padding:40px"><h1 style="color:#e6e9ee;font-size:20px">mlaas</h1><p>The API reference is published here by the Docs workflow when a release is cut.</p>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>mlaas · API reference</title>
+<meta name="description" content="HTTP reference for mlaas, a local model service that retrains itself.">
+<style>
+  :root {
+    --bg:#12161c; --surface:#191e26; --ink:#e6e9ee; --ink2:#aab3c1; --ink3:#7c8595;
+    --line:#2b323d; --accent:#3fc1b0;
+  }
+  html, body { margin:0; background:var(--bg); color:var(--ink); }
+  body { font:15px/1.5 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
+  header { border-bottom:1px solid var(--line); padding:20px 24px; }
+  header h1 { font-size:20px; margin:0; }
+  header .sub { color:var(--ink2); font-size:13px; margin-top:4px; }
+  header .note { color:var(--ink3); font-size:12.5px; margin-top:10px; max-width:70ch; }
+  header code { font:12.5px ui-monospace, SFMono-Regular, Menlo, monospace; color:var(--accent); }
+  #redoc { background:var(--bg); }
+  /* Redoc has no dark mode of its own; these carry the theme into the parts
+     its JavaScript options do not reach. */
+  .redoc-wrap, .menu-content { background:var(--bg) !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>mlaas</h1>
+  <div class="sub">a local model service that retrains itself · HTTP reference</div>
+  <div class="note">
+    Generated from the service's own route table, so it describes exactly the
+    build it was published from - there is no second copy of this to fall out
+    of date. Every call needs an <code>X-API-Key</code> header except the two
+    marked as needing none. A running instance serves the same document at
+    <code>/openapi.json</code> and an interactive version at <code>/docs</code>.
+  </div>
+</header>
+
+<div id="redoc"></div>
+
+<script src="https://cdn.redoc.ly/redoc/v2.5.4/bundles/redoc.standalone.js"></script>
+<script>
+  // Pinned rather than "latest": this page is public, and an unpinned CDN
+  // bundle is someone else's code changing under it without a commit here.
+  Redoc.init("openapi.json", {
+    hideDownloadButton: false,
+    expandResponses: "200",
+    sortTagsAlphabetically: false,
+    theme: {
+      colors: {
+        primary: { main: "#3fc1b0" },
+        text: { primary: "#e6e9ee", secondary: "#aab3c1" },
+        border: { dark: "#2b323d", light: "#2b323d" },
+        http: {
+          get: "#3fc1b0", post: "#6ea8fe", put: "#e0a03a",
+          patch: "#e0a03a", delete: "#f87171"
+        }
+      },
+      typography: {
+        fontSize: "15px",
+        fontFamily: '-apple-system, "Segoe UI", Helvetica, Arial, sans-serif',
+        headings: { fontFamily: '-apple-system, "Segoe UI", Helvetica, Arial, sans-serif' },
+        code: {
+          fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+          color: "#e6e9ee", backgroundColor: "#0d1015"
+        }
+      },
+      sidebar: {
+        backgroundColor: "#191e26", textColor: "#e6e9ee",
+        activeTextColor: "#3fc1b0", arrow: { color: "#7c8595" }
+      },
+      rightPanel: { backgroundColor: "#0d1015", textColor: "#e6e9ee" },
+      codeBlock: { backgroundColor: "#0d1015" },
+      schema: { nestedBackground: "#191e26", typeNameColor: "#aab3c1" }
+    }
+  }, document.getElementById("redoc"));
+</script>
+
+</body>
+</html>
